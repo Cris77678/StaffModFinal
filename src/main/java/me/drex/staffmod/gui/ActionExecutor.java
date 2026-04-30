@@ -71,6 +71,13 @@ public class ActionExecutor {
         if (isOffline(staff, target) || guard(staff, target)) return;
         logHistory(staff, "KICK", target, reason);
         DataStore.saveAsync();
+        
+        me.drex.staffmod.util.DiscordWebhook.sendEmbed(
+            "Sanción Aplicada: KICK",
+            "**Staff:** " + staff.getName().getString() + "\n**Jugador:** " + target.getName().getString() + "\n**Razón:** " + reason,
+            0xFFA500 // Naranja
+        );
+
         target.connection.disconnect(Component.literal("§cHas sido expulsado.\n§fRazón: §e" + reason));
         broadcastToStaff(staff, "§c[sᴛᴀꜰꜰ] §f" + staff.getName().getString()
             + " §ckickeó §fa §f" + target.getName().getString() + "§7. Razón: " + reason);
@@ -84,6 +91,12 @@ public class ActionExecutor {
         pd.muteReason = reason;
         logHistory(staff, "MUTE", target, duration + " - " + reason);
         DataStore.saveAsync();
+
+        me.drex.staffmod.util.DiscordWebhook.sendEmbed(
+            "Sanción Aplicada: MUTE",
+            "**Staff:** " + staff.getName().getString() + "\n**Jugador:** " + target.getName().getString() + "\n**Duración:** " + duration + "\n**Razón:** " + reason,
+            0xFFFF00 // Amarillo
+        );
 
         final long expiry = pd.muteExpiry;
         target.sendSystemMessage(Component.literal(
@@ -121,6 +134,12 @@ public class ActionExecutor {
         logHistory(staff, "JAIL", target, jailName + " - " + duration);
         DataStore.saveAsync();
 
+        me.drex.staffmod.util.DiscordWebhook.sendEmbed(
+            "Sanción Aplicada: JAIL",
+            "**Staff:** " + staff.getName().getString() + "\n**Jugador:** " + target.getName().getString() + "\n**Cárcel:** " + jailName + "\n**Duración:** " + duration,
+            0x800080 // Morado
+        );
+
         target.sendSystemMessage(Component.literal(
             "§c[sᴛᴀꜰꜰ] Has sido enviado a la cárcel §f" + jailName
             + "§c.\n§fDuración: §e" + PlayerData.formatExpiry(pd.jailExpiry)));
@@ -154,6 +173,12 @@ public class ActionExecutor {
         pd.banReason = reason;
         logHistory(staff, "BAN", target, duration + " - " + reason);
         DataStore.saveAsync();
+
+        me.drex.staffmod.util.DiscordWebhook.sendEmbed(
+            "Sanción Aplicada: BAN",
+            "**Staff:** " + staff.getName().getString() + "\n**Jugador:** " + target.getName().getString() + "\n**Duración:** " + duration + "\n**Razón:** " + reason,
+            0xFF0000 // Rojo
+        );
 
         String expStr = PlayerData.formatExpiry(pd.banExpiry);
         target.connection.disconnect(Component.literal(
@@ -205,6 +230,13 @@ public class ActionExecutor {
             staff.getName().getString(), staff.getUUID().toString()));
         logHistory(staff, "WARN", target, reason);
         DataStore.saveAsync();
+
+        me.drex.staffmod.util.DiscordWebhook.sendEmbed(
+            "Sanción Aplicada: WARN",
+            "**Staff:** " + staff.getName().getString() + "\n**Jugador:** " + target.getName().getString() + "\n**Razón:** " + reason,
+            0xFFD700 // Dorado
+        );
+
         target.sendSystemMessage(Component.literal(
             "§c[sᴛᴀꜰꜰ] Has recibido una advertencia (#" + pd.warns.size() + ").\n§fRazón: §e" + reason));
         staff.sendSystemMessage(Component.literal(
