@@ -9,8 +9,10 @@ import me.drex.staffmod.gui.KitEditorGui;
 import me.drex.staffmod.util.PermissionUtil;
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.commands.Commands;
+import net.minecraft.core.NonNullList;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.item.ItemStack;
 
 public class KitCommand {
 
@@ -39,6 +41,13 @@ public class KitCommand {
                         return builder.buildFuture();
                     })
                     .executes(KitCommand::deleteKit)))
+            .then(Commands.literal("setitems")
+                .then(Commands.argument("id", StringArgumentType.word())
+                    .suggests((ctx, builder) -> {
+                        KitManager.getAllKits().forEach(k -> builder.suggest(k.id));
+                        return builder.buildFuture();
+                    })
+                    .executes(KitCommand::setItems)))
         );
     }
 
@@ -79,6 +88,30 @@ public class KitCommand {
         }
         KitManager.deleteKit(id);
         player.sendSystemMessage(Component.literal("§a[ᴋɪᴛs] Kit '" + id + "' eliminado."));
+        return 1;
+    }
+
+    private static int setItems(CommandContext<CommandSourceStack> ctx) throws com.mojang.brigadier.exceptions.CommandSyntaxException {
+        ServerPlayer player = ctx.getSource().getPlayerOrException();
+        String id = StringArgumentType.getString(ctx, "id").toLowerCase();
+        Kit kit = KitManager.getKit(id);
+
+        if (kit == null) {
+            player.sendSystemMessage(Component.literal("§cNo existe ningún kit con esa ID."));
+            return 0;
+        }
+
+        // Copiar los primeros 36 slots del inventario del jugador
+        NonNullList<ItemStack> items = NonNullList.withSize(36, ItemStack.EMPTY);
+        for (int i = 0; i < 36; i++) {
+            ItemStack stack = player.getInventory().getItem(i);
+            items.set(i, stack.isEmpty() ? ItemStack.EMPTY : stack.copy());
+        }
+
+        kit.base64Inventory = KitManager.serializeItems(items, player.serverLevel().registryAccess());
+        KitManager.createOrUpdateKit(kit);
+
+        player.sendSystemMessage(Component.literal("§a[ᴋɪᴛs] Ítems guardados exitosamente en el kit §f" + kit.displayName));
         return 1;
     }
 }
