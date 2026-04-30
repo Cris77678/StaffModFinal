@@ -127,6 +127,23 @@ public class DataStore {
             player.sendSystemMessage(Component.literal(
                 "§c[sᴛᴀꜰꜰ] Sigues en la cárcel. Expira: §e" + PlayerData.formatExpiry(pd.jailExpiry)));
         }
+
+        // Revisar si tiene tickets con respuestas no leídas
+        for (TicketEntry t : tickets.values()) {
+            if (t.creatorUuid.equals(player.getUUID()) && t.hasUnreadReply) {
+                player.getServer().execute(() -> {
+                    player.sendSystemMessage(Component.literal(" "));
+                    player.sendSystemMessage(Component.literal("§a§l¡Tienes respuestas nuevas en tu ticket #" + t.id + "!"));
+                    for (String reply : t.replies) {
+                        player.sendSystemMessage(Component.literal(reply));
+                    }
+                    player.sendSystemMessage(Component.literal("§7Usa §e/ticket reply " + t.id + " <mensaje> §7para contestar."));
+                    player.sendSystemMessage(Component.literal(" "));
+                });
+                t.hasUnreadReply = false;
+                updateTicket(t);
+            }
+        }
     }
 
     // ───── CARGA ─────
@@ -241,6 +258,17 @@ public class DataStore {
                     t.updatedAt  = getL(obj, "updatedAt");
                     if (t.createdAt == -1) t.createdAt = System.currentTimeMillis();
                     if (t.updatedAt == -1) t.updatedAt = t.createdAt;
+                    
+                    // Cargar respuestas
+                    if (obj.has("replies")) {
+                        for (JsonElement re : obj.get("replies").getAsJsonArray()) {
+                            t.replies.add(re.getAsString());
+                        }
+                    }
+                    if (obj.has("hasUnreadReply")) {
+                        t.hasUnreadReply = obj.get("hasUnreadReply").getAsBoolean();
+                    }
+                    
                     tickets.put(t.id, t);
                 }
             }
@@ -361,6 +389,15 @@ public class DataStore {
             obj.addProperty("handledBy",   t.handledBy);
             obj.addProperty("createdAt",   t.createdAt);
             obj.addProperty("updatedAt",   t.updatedAt);
+            
+            // Guardar respuestas
+            JsonArray repliesArray = new JsonArray();
+            for (String reply : t.replies) {
+                repliesArray.add(reply);
+            }
+            obj.add("replies", repliesArray);
+            obj.addProperty("hasUnreadReply", t.hasUnreadReply);
+
             arr.add(obj);
         }
         root.add("tickets", arr);
