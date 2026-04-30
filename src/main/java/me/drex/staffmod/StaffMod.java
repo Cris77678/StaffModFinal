@@ -74,6 +74,12 @@ public class StaffMod implements ModInitializer {
             PermissionUtil.init();
             RankManager.loadRanks();
             KitManager.load();
+            
+            // ------------------------------------------------------------------
+            // AQUÍ PONES LA URL DE TU WEBHOOK DE DISCORD
+            // Reemplaza "https://discord.com/api/webhooks/..." con tu enlace real
+            // ------------------------------------------------------------------
+            me.drex.staffmod.util.DiscordWebhook.setUrl("https://discord.com/api/webhooks/TU_ID/TU_TOKEN");
 
             // Base de datos SQLite
             StaffModAsync.runAsync(() -> {
