@@ -23,13 +23,11 @@ public class StaffMainGui extends SimpleGui {
     }
 
     private void build() {
-        // Fondo
         for (int i = 0; i < getSize(); i++) {
             setSlot(i, new GuiElementBuilder(Items.BLACK_STAINED_GLASS_PANE)
                 .setName(Component.literal(" ")).build());
         }
 
-        // ── ESTADÍSTICAS LIVE (Fila 2, centro) ──
         int onlinePlayers = staff.getServer().getPlayerCount();
         long openTickets  = DataStore.getAllTickets().stream()
             .filter(t -> "ABIERTO".equals(t.status)).count();
@@ -52,14 +50,17 @@ public class StaffMainGui extends SimpleGui {
             .addLoreLine(Component.literal("§7MSPT: §f" + String.format("%.2f", avgMs) + "ms"))
             .build());
 
-        setSlot(16, new GuiElementBuilder(openTickets > 0 ? Items.WRITABLE_BOOK : Items.BOOK)
-            .setName(Component.literal("§e§lTickets Pendientes"))
-            .addLoreLine(Component.literal("§7Sin atender: §f" + openTickets))
+        // BOTÓN DINÁMICO DE TICKETS
+        var ticketItem = openTickets > 0 ? Items.ENCHANTED_BOOK : Items.BOOK;
+        String ticketName = openTickets > 0 ? "§e§lTickets §6(§f" + openTickets + " pendientes§6)" : "§aGestión de Tickets";
+        
+        setSlot(16, new GuiElementBuilder(ticketItem)
+            .setName(Component.literal(ticketName))
+            .addLoreLine(Component.literal(openTickets > 0 ? "§7¡Hay tickets esperando atención!" : "§7No hay tickets pendientes."))
             .addLoreLine(Component.literal("§eClick para gestionar"))
             .setCallback((idx, type, action, gui) -> new TicketGui(staff, this).open())
             .build());
 
-        // ── HERRAMIENTAS DE MODERACIÓN (Filas 4-5) ──
         addTool(27, "staffmod.kick",     Items.IRON_BOOTS,    "§c§lᴇxᴘᴜʟsᴀʀ",        "Kickear un jugador",             StaffAction.KICK);
         addTool(28, "staffmod.mute",     Items.STRING,         "§e§lsɪʟᴇɴᴄɪᴀʀ",       "Mute temporal o permanente",    StaffAction.MUTE);
         addTool(29, "staffmod.jail",     Items.IRON_BARS,      "§6§lᴄáʀᴄᴇʟ",          "Enviar a prisión",              StaffAction.JAIL);
@@ -71,7 +72,6 @@ public class StaffMainGui extends SimpleGui {
         addTool(35, "staffmod.kill",     Items.SKELETON_SKULL, "§c§lᴋɪʟʟ",            "Matar a un jugador",            StaffAction.KILL);
         addTool(36, "staffmod.pokespy",  Items.DRAGON_EGG,     "§d§lᴘᴏᴋᴇsᴘʏ",         "Inspeccionar equipo Pokémon",   StaffAction.POKESPY);
 
-        // ── UTILIDADES DE TURNO (Fila 5) ──
         boolean scToggled = DataStore.isStaffChatToggled(staff.getUUID());
         setSlot(40, new GuiElementBuilder(scToggled ? Items.YELLOW_DYE : Items.LIGHT_GRAY_DYE)
             .setName(Component.literal(scToggled ? "§e§lsᴛᴀꜰꜰ ᴄʜᴀᴛ: FIJO" : "§7§lsᴛᴀꜰꜰ ᴄʜᴀᴛ: NORMAL"))
@@ -90,7 +90,6 @@ public class StaffMainGui extends SimpleGui {
                 build();
             }).build());
 
-        // Vanish
         boolean isVanished = VanishManager.isVanished(staff.getUUID());
         setSlot(42, new GuiElementBuilder(isVanished ? Items.PHANTOM_MEMBRANE : Items.GLASS)
             .setName(Component.literal(isVanished ? "§a§lᴠᴀɴɪsʜ: ACTIVO" : "§7§lᴠᴀɴɪsʜ: INACTIVO"))
@@ -104,7 +103,6 @@ public class StaffMainGui extends SimpleGui {
                 }
             }).build());
 
-        // Builder Mode
         boolean isBuilder = BuilderManager.isBuilderMode(staff.getUUID());
         setSlot(43, new GuiElementBuilder(isBuilder ? Items.BRICKS : Items.BRICK)
             .setName(Component.literal(isBuilder ? "§a§lʙᴜɪʟᴅᴇʀ: ACTIVO" : "§7§lʙᴜɪʟᴅᴇʀ: INACTIVO"))
@@ -118,21 +116,18 @@ public class StaffMainGui extends SimpleGui {
                 }
             }).build());
 
-        // Kits
         setSlot(44, new GuiElementBuilder(Items.CHEST)
             .setName(Component.literal("§e§lᴋɪᴛs ᴅᴇ sᴛᴀꜰꜰ"))
             .addLoreLine(Component.literal("§7Reclama tus kits según tu rango."))
             .setCallback((idx, type, action, gui) -> new KitListGui(staff, this).open())
             .build());
 
-        // Stats de Staff
         setSlot(50, new GuiElementBuilder(Items.WRITTEN_BOOK)
             .setName(Component.literal("§6§lAᴜᴅɪᴛᴏʀíᴀ sᴛᴀꜰꜰ"))
             .addLoreLine(Component.literal("§7Historial de acciones del equipo."))
             .setCallback((idx, type, action, gui) -> new StaffStatsGui(staff, this).open())
             .build());
 
-        // Panel Dev
         if (PermissionUtil.has(staff, "staffmod.developer")) {
             setSlot(53, new GuiElementBuilder(Items.COMMAND_BLOCK)
                 .setName(Component.literal("§d§lPᴀɴᴇʟ ᴅᴇ ᴅᴇsᴀʀʀᴏʟʟᴀᴅᴏʀ"))
