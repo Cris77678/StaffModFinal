@@ -68,14 +68,29 @@ public class TicketGui extends SimpleGui {
                 .setName(Component.literal("§f§lTicket §b#" + t.id + " §8— §f" + t.creatorName))
                 .addLoreLine(Component.literal("§7Estado: " + statusColor + t.status))
                 .addLoreLine(Component.literal("§7Fecha: §f" + dateStr))
-                .addLoreLine(Component.literal("§7Mensaje: §e" + t.message))
-                .addLoreLine(Component.literal(" "));
+                .addLoreLine(Component.literal("§7Mensaje original: §e" + t.message));
+
+            // MOSTRAR LAS RESPUESTAS (HISTORIAL)
+            if (t.replies != null && !t.replies.isEmpty()) {
+                btn.addLoreLine(Component.literal(" "));
+                btn.addLoreLine(Component.literal("§aÚltimos mensajes:"));
+                
+                // Mostramos solo las últimas 5 respuestas para no desbordar la pantalla
+                int startReply = Math.max(0, t.replies.size() - 5);
+                for (int j = startReply; j < t.replies.size(); j++) {
+                    btn.addLoreLine(Component.literal(t.replies.get(j)));
+                }
+            }
+
+            btn.addLoreLine(Component.literal(" "));
+            btn.addLoreLine(Component.literal("§8(Responde en el chat: §e/ticket reply " + t.id + " <msg>§8)"));
+            btn.addLoreLine(Component.literal(" "));
 
             if ("ABIERTO".equals(t.status)) {
                 btn.addLoreLine(Component.literal("§aClick izq: §fTomar ticket"));
                 btn.addLoreLine(Component.literal("§cClick der: §fCerrar ticket"));
             } else if ("TOMADO".equals(t.status)) {
-                btn.addLoreLine(Component.literal("§7Atendido por: §f" + (t.handledBy.isEmpty() ? "?" : t.handledBy)));
+                btn.addLoreLine(Component.literal("§7Atendido por: §f" + (t.handledBy == null || t.handledBy.isEmpty() ? "?" : t.handledBy)));
                 btn.addLoreLine(Component.literal("§cClick der: §fCerrar ticket"));
             }
 
