@@ -1,5 +1,7 @@
 package me.drex.staffmod.config;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.UUID;
 
 public class TicketEntry {
@@ -12,6 +14,10 @@ public class TicketEntry {
     public String handledBy;
     public long createdAt;
     public long updatedAt;
+    
+    // Variables nuevas para respuestas
+    public List<String> replies = new ArrayList<>();
+    public boolean hasUnreadReply = false;
 
     public TicketEntry(int id, UUID creatorUuid, String creatorName, String message) {
         this.id = id;
