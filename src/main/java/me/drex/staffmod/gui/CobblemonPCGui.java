@@ -11,6 +11,7 @@ import eu.pb4.sgui.api.gui.SimpleGui;
 import me.drex.staffmod.logging.AuditLogManager;
 import me.drex.staffmod.util.PermissionUtil;
 import net.minecraft.network.chat.Component;
+import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.inventory.MenuType;
 import net.minecraft.world.item.Items;
@@ -18,17 +19,6 @@ import net.minecraft.world.item.Items;
 import java.util.List;
 import java.util.Map;
 
-/**
- * Inspector del PC de Cobblemon 1.7.3.
- *
- * PCStore extiende PokemonStore<PCBox>.
- * - PokemonStore.iterator() itera sobre Pokemon? (NOT PCBox)
- * - Las cajas se acceden via pc.getBoxes() (propiedad Kotlin 'boxes' -> getter Java)
- * - Cada PCBox tiene 30 slots indexados 0..29, accedidos via box.get(index)
- * - PCBox.get(index) retorna Pokemon? (nullable)
- *
- * IVs/EVs se castean a Map<Stat,Integer> (extienden HashMap en Kotlin).
- */
 public class CobblemonPCGui extends SimpleGui {
 
     private final ServerPlayer staff;
@@ -52,13 +42,15 @@ public class CobblemonPCGui extends SimpleGui {
     private void build() {
         for (int i = 0; i < getSize(); i++) clearSlot(i);
 
-        PCStore pc = Cobblemon.INSTANCE.getStorage().getPC(target);
+        // OBTENCIÓN CORRECTA DE PCSTORE
+        ServerLevel serverLevel = target.serverLevel();
+        PCStore pc = Cobblemon.INSTANCE.getStorage().getPC(target.getUUID(), serverLevel);
+
         if (pc == null) {
             setTitle(Component.literal("\u00a7cError: PC no disponible"));
             return;
         }
 
-        // pc.getBoxes() = propiedad Kotlin 'boxes': List<PCBox>
         List<PCBox> boxes = pc.getBoxes();
         int totalBoxes = boxes.size();
 
@@ -75,7 +67,6 @@ public class CobblemonPCGui extends SimpleGui {
         PCBox box = boxes.get(currentBox);
 
         for (int i = 0; i < SLOTS_PER_BOX; i++) {
-            // box.get(index) retorna Pokemon? (Kotlin nullable)
             Pokemon pokemon;
             try { pokemon = box.get(i); }
             catch (Exception e) { pokemon = null; }
@@ -117,7 +108,6 @@ public class CobblemonPCGui extends SimpleGui {
             setSlot(i, btn.build());
         }
 
-        // Barra navegacion fila 6
         for (int i = 45; i < 54; i++) {
             setSlot(i, new GuiElementBuilder(Items.BLACK_STAINED_GLASS_PANE)
                 .setName(Component.literal(" ")).build());
