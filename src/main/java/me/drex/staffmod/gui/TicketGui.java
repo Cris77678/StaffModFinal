@@ -31,16 +31,53 @@ public class TicketGui extends SimpleGui {
         build();
     }
 
+    private void openReplyAnvil(TicketEntry ticket) {
+        eu.pb4.sgui.api.gui.AnvilInputGui anvil = new eu.pb4.sgui.api.gui.AnvilInputGui(staff, false);
+        anvil.setTitle(Component.literal("Respuesta al Ticket #" + ticket.id));
+        anvil.setDefaultText("Escribe tu respuesta...");
+        
+        anvil.setConfirmCallback((reply) -> {
+            if (reply.length() < 3 || reply.equals("Escribe tu respuesta...")) return;
+            
+            String format = "§c[sᴛᴀꜰꜰ] §f" + staff.getName().getString() + "§7: §e" + reply;
+            ticket.replies.add(format);
+            ticket.hasUnreadReply = true;
+            ticket.status = "TOMADO";
+            ticket.handledBy = staff.getName().getString();
+            
+            DataStore.updateTicket(ticket);
+            
+            ServerPlayer target = staff.getServer().getPlayerList().getPlayer(ticket.creatorUuid);
+            if (target != null) {
+                target.sendSystemMessage(Component.literal(" "));
+                target.sendSystemMessage(Component.literal("§a§l¡El staff ha respondido a tu ticket #" + ticket.id + "!"));
+                target.sendSystemMessage(Component.literal(format));
+                target.sendSystemMessage(Component.literal("§7Usa §e/ticket reply " + ticket.id + " <mensaje> §7para contestar."));
+                target.sendSystemMessage(Component.literal(" "));
+                ticket.hasUnreadReply = false;
+                DataStore.updateTicket(ticket);
+            }
+            
+            staff.sendSystemMessage(Component.literal("§a[ᴛɪᴄᴋᴇᴛs] Respuesta enviada con éxito al ticket #" + ticket.id));
+            
+            // Volver a abrir el TicketGui
+            net.minecraft.server.MinecraftServer server = staff.getServer();
+            if(server != null) {
+               server.execute(this::open);
+            }
+        });
+        
+        anvil.open();
+    }
+
     private void build() {
         for (int i = 0; i < getSize(); i++) clearSlot(i);
 
-        // Fondo barra navegación
         for (int i = 45; i < 54; i++) {
             setSlot(i, new GuiElementBuilder(Items.BLACK_STAINED_GLASS_PANE)
                 .setName(Component.literal(" ")).build());
         }
 
-        // Tickets ordenados: ABIERTO primero, luego por ID desc
         List<TicketEntry> sorted = DataStore.getAllTickets().stream()
             .sorted(Comparator.<TicketEntry, Integer>comparing(t -> "ABIERTO".equals(t.status) ? 0 : 1)
                 .thenComparingInt(t -> -t.id))
@@ -70,12 +107,9 @@ public class TicketGui extends SimpleGui {
                 .addLoreLine(Component.literal("§7Fecha: §f" + dateStr))
                 .addLoreLine(Component.literal("§7Mensaje original: §e" + t.message));
 
-            // MOSTRAR LAS RESPUESTAS (HISTORIAL)
             if (t.replies != null && !t.replies.isEmpty()) {
                 btn.addLoreLine(Component.literal(" "));
                 btn.addLoreLine(Component.literal("§aÚltimos mensajes:"));
-                
-                // Mostramos solo las últimas 5 respuestas para no desbordar la pantalla
                 int startReply = Math.max(0, t.replies.size() - 5);
                 for (int j = startReply; j < t.replies.size(); j++) {
                     btn.addLoreLine(Component.literal(t.replies.get(j)));
@@ -83,7 +117,7 @@ public class TicketGui extends SimpleGui {
             }
 
             btn.addLoreLine(Component.literal(" "));
-            btn.addLoreLine(Component.literal("§8(Responde en el chat: §e/ticket reply " + t.id + " <msg>§8)"));
+            btn.addLoreLine(Component.literal("§8(O responde en chat: §e/ticket reply " + t.id + " <msg>§8)"));
             btn.addLoreLine(Component.literal(" "));
 
             if ("ABIERTO".equals(t.status)) {
@@ -91,12 +125,12 @@ public class TicketGui extends SimpleGui {
                 btn.addLoreLine(Component.literal("§cClick der: §fCerrar ticket"));
             } else if ("TOMADO".equals(t.status)) {
                 btn.addLoreLine(Component.literal("§7Atendido por: §f" + (t.handledBy == null || t.handledBy.isEmpty() ? "?" : t.handledBy)));
+                btn.addLoreLine(Component.literal("§bClick izq: §fEscribir respuesta"));
                 btn.addLoreLine(Component.literal("§cClick der: §fCerrar ticket"));
             }
 
             final TicketEntry ticket = t;
             btn.setCallback((idx, type, action, gui) -> {
-                // Click izquierdo (PICKUP) → Tomar
                 if (action == net.minecraft.world.inventory.ClickType.PICKUP
                     || action == net.minecraft.world.inventory.ClickType.QUICK_MOVE) {
                     if ("ABIERTO".equals(ticket.status)) {
@@ -107,23 +141,24 @@ public class TicketGui extends SimpleGui {
                             ticket.creatorName, "Ticket #" + ticket.id);
                         staff.sendSystemMessage(Component.literal(
                             "§a[ᴛɪᴄᴋᴇᴛs] Tomaste el ticket §b#" + ticket.id + " §ade §f" + ticket.creatorName));
+                        build();
+                    } else if ("TOMADO".equals(ticket.status)) {
+                        openReplyAnvil(ticket);
                     }
                 } else {
-                    // Click derecho → Cerrar
                     ticket.status = "CERRADO";
                     DataStore.updateTicket(ticket);
                     AuditLogManager.log(staff.getName().getString(), "TICKET_CLOSE",
                         ticket.creatorName, "Ticket #" + ticket.id);
                     staff.sendSystemMessage(Component.literal(
                         "§7[ᴛɪᴄᴋᴇᴛs] Ticket §b#" + ticket.id + " §7cerrado."));
+                    build();
                 }
-                build();
             });
 
             setSlot(slot, btn.build());
         }
 
-        // Navegación
         if (currentPage > 0) {
             setSlot(45, new GuiElementBuilder(Items.ARROW)
                 .setName(Component.literal("§e◄ Anterior"))
