@@ -25,6 +25,7 @@ import net.fabricmc.fabric.api.message.v1.ServerMessageEvents;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayConnectionEvents;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.MinecraftServer;
+import net.minecraft.server.level.ServerPlayer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -66,6 +67,29 @@ public class StaffMod implements ModInitializer {
             return AntiSpamFilter.checkChat(sender, message.signedContent());
         });
 
+        // Evento de desconexión: Alerta de evasión de Freeze
+        ServerPlayConnectionEvents.DISCONNECT.register((handler, server) -> {
+            ServerPlayer player = handler.player;
+            PlayerData pd = DataStore.get(player.getUUID());
+            
+            if (pd != null && pd.frozen) {
+                // Avisar al staff conectado
+                for (ServerPlayer p : server.getPlayerList().getPlayers()) {
+                    if (PermissionUtil.has(p, "staffmod.use")) {
+                        p.sendSystemMessage(Component.literal(
+                            "§4§l[ALERTA] §cEl jugador §f" + player.getName().getString() + 
+                            " §cse desconectó mientras estaba CONGELADO."));
+                    }
+                }
+                // Avisar a Discord
+                me.drex.staffmod.util.DiscordWebhook.sendEmbed(
+                    "Evasión de Revisión (Freeze)", 
+                    "El jugador **" + player.getName().getString() + "** se desconectó estando congelado.", 
+                    0xFF5555 // Rojo claro
+                );
+            }
+        });
+
         // Inicio del servidor
         ServerLifecycleEvents.SERVER_STARTED.register(server -> {
             SERVER = server;
@@ -74,12 +98,10 @@ public class StaffMod implements ModInitializer {
             PermissionUtil.init();
             RankManager.loadRanks();
             KitManager.load();
-            
-            // ------------------------------------------------------------------
-            // AQUÍ PONES LA URL DE TU WEBHOOK DE DISCORD
-            // Reemplaza "https://discord.com/api/webhooks/..." con tu enlace real
-            // ------------------------------------------------------------------
-            me.drex.staffmod.util.DiscordWebhook.setUrl("https://discord.com/api/webhooks/TU_ID/TU_TOKEN");
+
+            // Configurar Webhook de Discord
+            // Asegúrate de reemplazar esto por el enlace real de tu servidor de Discord
+            me.drex.staffmod.util.DiscordWebhook.setUrl("AQUI_TU_WEBHOOK_URL_COMPLETO");
 
             // Base de datos SQLite
             StaffModAsync.runAsync(() -> {
