@@ -19,7 +19,6 @@ public class TicketCommand {
                 .executes(ctx -> {
                     ServerPlayer player = ctx.getSource().getPlayerOrException();
 
-                    // Anti-spam: no más de 1 ticket abierto por jugador
                     boolean hasOpen = DataStore.getAllTickets().stream()
                         .anyMatch(t -> t.creatorUuid.equals(player.getUUID())
                             && ("ABIERTO".equals(t.status) || "TOMADO".equals(t.status)));
@@ -40,10 +39,16 @@ public class TicketCommand {
                     TicketEntry ticket = DataStore.createTicket(
                         player.getUUID(), player.getName().getString(), message);
 
+                    // Notificación a Discord
+                    me.drex.staffmod.util.DiscordWebhook.sendEmbed(
+                        "Nuevo Ticket: #" + ticket.id,
+                        "**Jugador:** " + player.getName().getString() + "\n**Mensaje:** " + message,
+                        0x00AAFF // Color azul
+                    );
+
                     player.sendSystemMessage(Component.literal(
                         "§a[ᴛɪᴄᴋᴇᴛs] Tu ticket §b(#" + ticket.id + ")§a fue enviado al staff."));
 
-                    // Notificar staff en turno
                     for (ServerPlayer p : player.getServer().getPlayerList().getPlayers()) {
                         if (PermissionUtil.has(p, "staffmod.use") && DataStore.isOnDuty(p.getUUID())) {
                             p.sendSystemMessage(Component.literal(
@@ -55,7 +60,6 @@ public class TicketCommand {
 
                     return 1;
                 }))
-            // Subcomando para responder
             .then(Commands.literal("reply")
                 .then(Commands.argument("id", IntegerArgumentType.integer())
                 .then(Commands.argument("respuesta", StringArgumentType.greedyString())
@@ -72,7 +76,6 @@ public class TicketCommand {
 
                         boolean isStaff = PermissionUtil.has(player, "staffmod.use");
                         
-                        // Si no es staff, verificar que el ticket sea suyo
                         if (!isStaff && !ticket.creatorUuid.equals(player.getUUID())) {
                             player.sendSystemMessage(Component.literal("§c[ᴛɪᴄᴋᴇᴛs] No tienes permiso para responder a este ticket."));
                             return 0;
@@ -85,7 +88,6 @@ public class TicketCommand {
                             ticket.hasUnreadReply = true;
                             ticket.status = "TOMADO";
                             
-                            // Si el jugador está online, notificarle inmediatamente
                             ServerPlayer target = player.getServer().getPlayerList().getPlayer(ticket.creatorUuid);
                             if (target != null) {
                                 target.sendSystemMessage(Component.literal(" "));
@@ -93,10 +95,9 @@ public class TicketCommand {
                                 target.sendSystemMessage(Component.literal(format));
                                 target.sendSystemMessage(Component.literal("§7Usa §e/ticket reply " + ticket.id + " <mensaje> §7para contestar."));
                                 target.sendSystemMessage(Component.literal(" "));
-                                ticket.hasUnreadReply = false; // Como ya se le notificó, se marca como leído
+                                ticket.hasUnreadReply = false;
                             }
                         } else {
-                            // Notificar al staff
                             for (ServerPlayer p : player.getServer().getPlayerList().getPlayers()) {
                                 if (PermissionUtil.has(p, "staffmod.use") && DataStore.isOnDuty(p.getUUID())) {
                                     p.sendSystemMessage(Component.literal("§e[ᴛɪᴄᴋᴇᴛs] §fEl jugador respondió al ticket §b#" + ticket.id + "§f:"));
